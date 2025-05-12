@@ -13,6 +13,10 @@ SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 -- CREATE DATABASE IF NOT EXISTS `the_scent_manatee` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- USE `the_scent_manatee`;
 
+-- CREATE USER 'manatee_user'@'localhost' IDENTIFIED BY 'ScentPassword123';
+-- GRANT ALL PRIVILEGES ON the_scent_manatee.* TO 'manatee_user'@'localhost';
+-- FLUSH PRIVILEGES;
+
 --
 -- Table structure for table `users`
 --
