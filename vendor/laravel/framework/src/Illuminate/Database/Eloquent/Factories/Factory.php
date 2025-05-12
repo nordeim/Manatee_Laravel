@@ -146,6 +146,7 @@ abstract class Factory
      * @param  string|null  $connection
      * @param  \Illuminate\Support\Collection|null  $recycle
      * @param  bool  $expandRelationships
+     * @return void
      */
     public function __construct(
         $count = null,
@@ -531,21 +532,6 @@ abstract class Factory
     }
 
     /**
-     * Prepend a new state transformation to the model definition.
-     *
-     * @param  (callable(array<string, mixed>, TModel|null): array<string, mixed>)|array<string, mixed>  $state
-     * @return static
-     */
-    public function prependState($state)
-    {
-        return $this->newInstance([
-            'states' => $this->states->prepend(
-                is_callable($state) ? $state : fn () => $state,
-            ),
-        ]);
-    }
-
-    /**
      * Set a single model attribute.
      *
      * @param  string|int  $key
@@ -841,8 +827,8 @@ abstract class Factory
             $appNamespace = static::appNamespace();
 
             return class_exists($appNamespace.'Models\\'.$namespacedFactoryBasename)
-                ? $appNamespace.'Models\\'.$namespacedFactoryBasename
-                : $appNamespace.$factoryBasename;
+                        ? $appNamespace.'Models\\'.$namespacedFactoryBasename
+                        : $appNamespace.$factoryBasename;
         };
 
         return $resolver($this);

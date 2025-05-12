@@ -1,11 +1,100 @@
-@import 'tailwindcss';
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+/* Define CSS variables for theming, based on sample_landing_page.html */
+:root {
+    /* Light Mode Palette */
+    --clr-bg: #f8f7f4;
+    --clr-bg-alt: #ffffff;
+    --clr-text: #333d41;
+    --clr-primary: #2a7c8a;
+    --clr-accent: #e0a86f;
+    --clr-soap: #c8dace;
+    --clr-cta: #ff7b4f;
+    --clr-cta-hover: #ff6a3d;
+    --clr-overlay: rgba(42, 124, 138, 0.06);
+    --clr-shadow: rgba(60, 35, 16, 0.08);
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Fonts */
+    --font-head: 'Cormorant Garamond', serif;
+    --font-body: 'Montserrat', sans-serif;
+    --font-accent: 'Raleway', sans-serif;
+
+    /* Transitions & Effects */
+    --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-base: 0 4px 12px 0 var(--clr-shadow);
+    --shadow-lg: 0 10px 30px -5px var(--clr-shadow);
+    --container-max-width: 1180px;
 }
+
+html.dark {
+    /* Dark Mode Palette */
+    --clr-bg: #1a202c;
+    --clr-bg-alt: #2d3748;
+    --clr-text: #e2e8f0;
+    --clr-primary: #4fd1c5;
+    --clr-accent: #f6ad55;
+    --clr-soap: #4a5568; /* Muted dark background element */
+    --clr-cta: #ff8c69;
+    --clr-cta-hover: #ff7043;
+    --clr-overlay: rgba(79, 209, 197, 0.1);
+    --clr-shadow: rgba(0, 0, 0, 0.2); /* Darker shadow for dark mode */
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: theme('colors.scent-bg'); /* Use Tailwind to reference variables */
+    color: theme('colors.scent-text');
+    line-height: 1.7;
+    min-height: 100vh;
+    transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global heading styles */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-head);
+    font-weight: 700;
+    color: theme('colors.scent-primary');
+    margin-bottom: 0.75em;
+    letter-spacing: .8px;
+    line-height: 1.2;
+}
+
+/* Global link styles */
+a {
+    color: theme('colors.scent-primary');
+    text-decoration: none;
+    transition: color var(--transition-base), opacity var(--transition-base);
+    outline-offset: 4px;
+}
+a:focus-visible {
+    outline: 2px solid theme('colors.scent-accent');
+    border-radius: 3px;
+}
+a:hover {
+    color: theme('colors.scent-accent');
+    opacity: 0.9;
+}
+
+/* Container utility (if not using Tailwind's default container with custom max-width) */
+.container-custom {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* Or your preferred padding */
+    padding-right: 1rem;
+    max-width: var(--container-max-width);
+}
+
+/* Add any other global base styles or component styles here */
+.btn {
+    @apply inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-full shadow-sm text-base font-medium transition-colors duration-150 ease-in-out;
+}
+.btn-primary {
+    @apply bg-scent-cta text-white hover:bg-scent-cta-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-scent-cta;
+}
+/* ... etc. */

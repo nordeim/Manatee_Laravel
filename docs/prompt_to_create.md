@@ -13,3 +13,21 @@ please carefully review the technical design specification document and the exec
 ---
 you have done an awesome job so far! now, use the same rigorous and meticulous methodology / approach to complete step 1 (sub steps 1.1 to 1.3) for me by generating all the specified files for step 1 (enclose each file within respective ```php and ``` tags). after completing all the sub-steps in step 1, review what you have done against the goals and checklist for step 1 in your execution plan and then provide a status update.
 
+---
+Please carefully review the following errors, then use the above rigorous and meticulous approach to create the complete replacement files. Do double-check and validate the codes before generating the final working ones.
+
+---
+Please carefully review the error messages and think deeply and systematically to explore the best implementation option to fix the issues, then choose the best implementation option to make changes. Double check and validate the codes before making changes. Remember to plan first before you execute so that you will not introduce regression errors.
+
+---
+you need to search the related documents online to resolve the conflicts and errors before creating a complete updated working file.
+
+---
+you have improved your problem solving approach to be more systematic, careful and deliberate. but still your approach to fixing issues can be further improved to be more rigorous and meticulous. now think more carefully to fix the following error.
+
+---
+please use the same rigorous and meticulous approach to think deeply and systematically to explore the best implementation option to fix the following issue (error). remember to double-check and validate any code changes, and always plan before you execute.
+
+---
+please carefully review the outputs from the commands and comment:
+

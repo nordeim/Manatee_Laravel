@@ -63,17 +63,7 @@ class Builder implements BuilderContract
     /**
      * The current query value bindings.
      *
-     * @var array{
-     *     select: list<mixed>,
-     *     from: list<mixed>,
-     *     join: list<mixed>,
-     *     where: list<mixed>,
-     *     groupBy: list<mixed>,
-     *     having: list<mixed>,
-     *     order: list<mixed>,
-     *     union: list<mixed>,
-     *     unionOrder: list<mixed>,
-     * }
+     * @var array
      */
     public $bindings = [
         'select' => [],
@@ -261,6 +251,8 @@ class Builder implements BuilderContract
 
     /**
      * Create a new query builder instance.
+     *
+     * @return void
      */
     public function __construct(
         ConnectionInterface $connection,
@@ -876,7 +868,7 @@ class Builder implements BuilderContract
         // where null clause to the query. So, we will allow a short-cut here to
         // that method for convenience so the developer doesn't have to check.
         if (is_null($value)) {
-            return $this->whereNull($column, $boolean, ! in_array($operator, ['=', '<=>'], true));
+            return $this->whereNull($column, $boolean, $operator !== '=');
         }
 
         $type = 'Basic';
@@ -968,7 +960,7 @@ class Builder implements BuilderContract
     protected function invalidOperatorAndValue($operator, $value)
     {
         return is_null($value) && in_array($operator, $this->operators) &&
-             ! in_array($operator, ['=', '<=>', '<>', '!=']);
+             ! in_array($operator, ['=', '<>', '!=']);
     }
 
     /**
@@ -2408,8 +2400,8 @@ class Builder implements BuilderContract
      * Add a "having" clause to the query.
      *
      * @param  \Illuminate\Contracts\Database\Query\Expression|\Closure|string  $column
-     * @param  \DateTimeInterface|string|int|float|null  $operator
-     * @param  \Illuminate\Contracts\Database\Query\Expression|\DateTimeInterface|string|int|float|null  $value
+     * @param  string|int|float|null  $operator
+     * @param  string|int|float|null  $value
      * @param  string  $boolean
      * @return $this
      */
@@ -2460,8 +2452,8 @@ class Builder implements BuilderContract
      * Add an "or having" clause to the query.
      *
      * @param  \Illuminate\Contracts\Database\Query\Expression|\Closure|string  $column
-     * @param  \DateTimeInterface|string|int|float|null  $operator
-     * @param  \Illuminate\Contracts\Database\Query\Expression|\DateTimeInterface|string|int|float|null  $value
+     * @param  string|int|float|null  $operator
+     * @param  string|int|float|null  $value
      * @return $this
      */
     public function orHaving($column, $operator = null, $value = null)
@@ -2800,9 +2792,7 @@ class Builder implements BuilderContract
     {
         $this->orders = $this->removeExistingOrdersFor($column);
 
-        if (is_null($lastId)) {
-            $this->whereNotNull($column);
-        } else {
+        if (! is_null($lastId)) {
             $this->where($column, '<', $lastId);
         }
 
@@ -2822,9 +2812,7 @@ class Builder implements BuilderContract
     {
         $this->orders = $this->removeExistingOrdersFor($column);
 
-        if (is_null($lastId)) {
-            $this->whereNotNull($column);
-        } else {
+        if (! is_null($lastId)) {
             $this->where($column, '>', $lastId);
         }
 
@@ -2862,9 +2850,10 @@ class Builder implements BuilderContract
     protected function removeExistingOrdersFor($column)
     {
         return (new Collection($this->orders))
-            ->reject(fn ($order) => isset($order['column']) && $order['column'] === $column)
-            ->values()
-            ->all();
+            ->reject(function ($order) use ($column) {
+                return isset($order['column'])
+                       ? $order['column'] === $column : false;
+            })->values()->all();
     }
 
     /**
@@ -3316,8 +3305,7 @@ class Builder implements BuilderContract
     {
         return array_map(function ($column) {
             return is_string($column) && ($aliasPosition = stripos($column, ' as ')) !== false
-                ? substr($column, 0, $aliasPosition)
-                : $column;
+                    ? substr($column, 0, $aliasPosition) : $column;
         }, $columns);
     }
 
@@ -3389,8 +3377,8 @@ class Builder implements BuilderContract
 
         return $this->applyAfterQueryCallbacks(
             is_array($queryResult[0])
-                ? $this->pluckFromArrayColumn($queryResult, $column, $key)
-                : $this->pluckFromObjectColumn($queryResult, $column, $key)
+                    ? $this->pluckFromArrayColumn($queryResult, $column, $key)
+                    : $this->pluckFromObjectColumn($queryResult, $column, $key)
         );
     }
 
@@ -3645,8 +3633,7 @@ class Builder implements BuilderContract
         // cast it to one. When it does we will cast it to a float since it needs to be
         // cast to the expected data type for the developers out of pure convenience.
         return ! str_contains((string) $result, '.')
-            ? (int) $result
-            : (float) $result;
+                ? (int) $result : (float) $result;
     }
 
     /**
@@ -4083,8 +4070,8 @@ class Builder implements BuilderContract
     public function getColumns()
     {
         return ! is_null($this->columns)
-            ? array_map(fn ($column) => $this->grammar->getValue($column), $this->columns)
-            : [];
+                ? array_map(fn ($column) => $this->grammar->getValue($column), $this->columns)
+                : [];
     }
 
     /**
@@ -4111,33 +4098,9 @@ class Builder implements BuilderContract
     }
 
     /**
-     * Get the "limit" value for the query or null if it's not set.
-     *
-     * @return mixed
-     */
-    public function getLimit()
-    {
-        $value = $this->unions ? $this->unionLimit : $this->limit;
-
-        return ! is_null($value) ? (int) $value : null;
-    }
-
-    /**
-     * Get the "offset" value for the query or null if it's not set.
-     *
-     * @return mixed
-     */
-    public function getOffset()
-    {
-        $value = $this->unions ? $this->unionOffset : $this->offset;
-
-        return ! is_null($value) ? (int) $value : null;
-    }
-
-    /**
      * Get the current query value bindings in a flattened array.
      *
-     * @return list<mixed>
+     * @return array
      */
     public function getBindings()
     {
@@ -4147,17 +4110,7 @@ class Builder implements BuilderContract
     /**
      * Get the raw array of bindings.
      *
-     * @return array{
-     *      select: list<mixed>,
-     *      from: list<mixed>,
-     *      join: list<mixed>,
-     *      where: list<mixed>,
-     *      groupBy: list<mixed>,
-     *      having: list<mixed>,
-     *      order: list<mixed>,
-     *      union: list<mixed>,
-     *      unionOrder: list<mixed>,
-     * }
+     * @return array
      */
     public function getRawBindings()
     {
@@ -4167,7 +4120,6 @@ class Builder implements BuilderContract
     /**
      * Set the bindings on the query builder.
      *
-     * @param  list<mixed>  $bindings
      * @param  string  $type
      * @return $this
      *
@@ -4201,7 +4153,7 @@ class Builder implements BuilderContract
 
         if (is_array($value)) {
             $this->bindings[$type] = array_values(array_map(
-                $this->castBinding(...),
+                [$this, 'castBinding'],
                 array_merge($this->bindings[$type], $value),
             ));
         } else {
@@ -4229,7 +4181,6 @@ class Builder implements BuilderContract
     /**
      * Merge an array of bindings into our bindings.
      *
-     * @param  self  $query
      * @return $this
      */
     public function mergeBindings(self $query)
@@ -4242,8 +4193,7 @@ class Builder implements BuilderContract
     /**
      * Remove all of the expressions from a list of bindings.
      *
-     * @param  array<mixed>  $bindings
-     * @return list<mixed>
+     * @return array
      */
     public function cleanBindings(array $bindings)
     {
@@ -4251,7 +4201,7 @@ class Builder implements BuilderContract
             ->reject(function ($binding) {
                 return $binding instanceof ExpressionContract;
             })
-            ->map($this->castBinding(...))
+            ->map([$this, 'castBinding'])
             ->values()
             ->all();
     }

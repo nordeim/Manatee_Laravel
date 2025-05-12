@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\ServiceProvider;
+
+return [
+    // ... (standard Laravel app config) ...
+
+    'name' => env('APP_NAME', 'The Scent'), // Updated default
+
+    // ...
+
+    'providers' => ServiceProvider::defaultProviders()->merge([
+        /*
+         * Package Service Providers...
+         */
+
+        /*
+         * Application Service Providers...
+         */
+        App\Providers\AppServiceProvider::class,
+        App\Providers\AuthServiceProvider::class,
+        // App\Providers\BroadcastServiceProvider::class, // Uncomment if using broadcasting
+        App\Providers\EventServiceProvider::class,
+        App\Providers\RouteServiceProvider::class,
+        App\Providers\FortifyServiceProvider::class, // If using Fortify
+        App\Providers\JetstreamServiceProvider::class, // If using Jetstream
+        App\Providers\DomainServiceProvider::class, // New - Custom Domain Service Provider
+        App\Providers\ViewServiceProvider::class, // New - For View Composers
+    ])->toArray(),
+
+    // ...
+
+    'aliases' => Facade::defaultAliases()->merge([
+        // 'Example' => App\Facades\Example::class,
+    ])->toArray(),
+
+];
