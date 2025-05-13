@@ -70,3 +70,9 @@ please continue to generate the remaining files according to your plan. use the 
 ---
 excellent and wonderful work! now, let us take stock of what you have accomplished (created) so far by reviewing the relevant documents (attached here for your attention) against the current project status and then carefully and systematically *update* the attached `project_technical_status_update_document.md`. remember to carefully recall and review all the files you have created in step 1, 2, 3, 4, 5 and 6, double-check and validate against the project technical specification document and execution plan, then add new updates to `project_technical_status_update_document.md`. If you need to re-generate any of the project files in step 1.1, 1.2 and 1.3, please do so now. Finally, create a detailed `deployment_guide_for_production.md` in markdown format in clear and logical step by step sequence.
 
+---
+awesome!!! now let us celebrate this new milestone by carefully updating for me your last (v2) update to the `project_technical_status_update_document.md`.
+
+---
+cheers! you have done yet another excellent job! now carefully review the deployment guide you created earlier to double-check and validate whether it needs further updating to take into account the completed step 7 in the execution plan.
+
