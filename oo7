@@ -1,0 +1,631 @@
+<think>
+The user wants me to continue with **Phase 6: Admin Panel Implementation**, specifically **Steps 6.3 and 6.4**.
+
+*   **Step 6.3: Order Management (Admin)**
+    *   `app/Http/Controllers/Admin/OrderController.php` (index, show, update status)
+    *   `resources/views/admin/orders/*` (index, show Blade files)
+    *   `app/Policies/OrderPolicy.php` (Implement admin rules)
+    *   Ensure `app/Domain/OrderManagement/Services/OrderService.php`'s `updateOrderStatus` dispatches `OrderStatusChangedEvent`. (The existing `OrderService` structure already does this).
+
+*   **Step 6.4: User Management & Tax Rate Management (Admin)**
+    *   **User Management:**
+        *   `app/Http/Controllers/Admin/UserController.php` (index, show, edit, update roles/status)
+        *   `resources/views/admin/users/*` (index, edit Blade files)
+        *   `app/Http/Requests/Admin/UpdateUserRequest.php` (New)
+        *   `app/Policies/UserPolicy.php` (Implement admin rules)
+    *   **Tax Rate Management:**
+        *   `app/Http/Controllers/Admin/TaxRateController.php` (CRUD for `TaxRate` model)
+        *   `app/Http/Requests/Admin/StoreTaxRateRequest.php` (New)
+        *   `app/Http/Requests/Admin/UpdateTaxRateRequest.php` (New)
+        *   `resources/views/admin/tax_rates/*` (index, create, edit Blade files)
+        *   `app/Policies/TaxRatePolicy.php` (New)
+
+**Key Considerations for these steps:**
+
+1.  **Order Management:**
+    *   `OrderController` will allow viewing a list of orders, individual order details, and updating order statuses.
+    *   The `OrderPolicy` will ensure only admins can perform these actions.
+    *   Views will display order information clearly.
+2.  **User Management:**
+    *   `UserController` will allow listing users, viewing details, and editing roles/status. User creation by admin might be out of scope for a simple admin panel initially (users usually register themselves). Deletion should be handled very carefully (soft deletes preferred).
+    *   `UserPolicy` to control these actions.
+    *   `UpdateUserRequest` for validating admin's updates to user profiles.
+3.  **Tax Rate Management:**
+    *   `TaxRateController` will provide full CRUD for `TaxRate` models.
+    *   `StoreTaxRateRequest` and `UpdateTaxRateRequest` for validation.
+    *   `TaxRatePolicy` for authorization.
+4.  **Blade Views:** I will provide the `index` and one `form` (create/edit combined or separate) view for each resource as an example. The `show` view for orders will be important.
+5.  **Route Model Binding:** Will be used in controllers for edit/show/update/destroy methods.
+6.  **Consistency:** Maintain UI consistency with the admin layout and other admin sections.
+
+I will now proceed to generate these files.
+</think>
+
+Okay, let's continue with **Phase 6: Admin Panel Implementation** by generating the files for **Steps 6.3 and 6.4**.
+
+---
+
+#### Step 6.3: Order Management (Admin)
+
+1.  **Policy: `app/Policies/OrderPolicy.php`** (New or Expanded from earlier phase if basic shell existed)
+
+    ```php
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App\Policies;
+
+    use App\Domain\UserManagement\Models\User;
+    use App\Domain\OrderManagement\Models\Order;
+
+    class OrderPolicy
+    {
+        /**
+         * Determine whether the user can view any models.
+         * Admin or staff can view all orders.
+         */
+        public function viewAny(User $user): bool
+        {
+            return $user->role === 'admin' || $user->role === 'staff';
+        }
+
+        /**
+         * Determine whether the user can view the model.
+         * Admin or staff can view any order.
+         * A regular user can view their own order (handled in AccountController).
+         */
+        public function view(User $user, Order $order): bool
+        {
+            if ($user->role === 'admin' || $user->role === 'staff') {
+                return true;
+            }
+            // This policy is for admin context, user's own order viewing is handled elsewhere.
+            // However, if you had a generic `view` permission, you'd add:
+            // return $user->id === $order->user_id;
+            return false;
+        }
+
+        /**
+         * Determine whether the user can create models.
+         * Orders are typically created by customers through checkout, not directly by admins.
+         */
+        public function create(User $user): bool
+        {
+            return false; // Admins typically don't create orders manually this way
+        }
+
+        /**
+         * Determine whether the user can update the model.
+         * Admin or staff can update order status, tracking, etc.
+         */
+        public function update(User $user, Order $order): bool
+        {
+            return $user->role === 'admin' || $user->role === 'staff';
+        }
+
+        /**
+         * Determine whether the user can delete the model.
+         * Generally, orders should not be hard deleted. Maybe soft delete or cancel.
+         */
+        public function delete(User $user, Order $order): bool
+        {
+            return $user->role === 'admin'; // Only admin, and with caution
+        }
+
+        /**
+         * Determine whether the user can restore the model.
+         */
+        public function restore(User $user, Order $order): bool
+        {
+            return $user->role === 'admin';
+        }
+
+        /**
+         * Determine whether the user can permanently delete the model.
+         */
+        public function forceDelete(User $user, Order $order): bool
+        {
+            return $user->role === 'admin'; // With extreme caution
+        }
+    }
+    ```
+    *(Register this in `AuthServiceProvider`)*
+    ```php
+    // In AuthServiceProvider.php's $policies array:
+    \App\Domain\OrderManagement\Models\Order::class => \App\Policies\OrderPolicy::class,
+    ```
+
+2.  **Controller: `app/Http/Controllers/Admin/OrderController.php`** (Expanded)
+
+    ```php
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App\Http\Controllers\Admin;
+
+    use App\Http\Controllers\Controller;
+    use App\Domain\OrderManagement\Models\Order;
+    use App\Domain\OrderManagement\Services\OrderService;
+    use Illuminate\Http\Request;
+    use Illuminate\View\View;
+    use Illuminate\Http\RedirectResponse;
+
+    class OrderController extends Controller
+    {
+        public function __construct(protected OrderService $orderService)
+        {
+             // Apply policy to resource methods (index, show, update are relevant here)
+            $this->authorizeResource(Order::class, 'order');
+        }
+
+        public function index(Request $request): View
+        {
+            $query = Order::with(['user', 'items'])->latest();
+
+            if ($request->filled('search')) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('order_number', 'like', '%' . $searchTerm . '%')
+                      ->orWhereHas('user', function ($userQuery) use ($searchTerm) {
+                          $userQuery->where('name', 'like', '%' . $searchTerm . '%')
+                                    ->orWhere('email', 'like', '%' . $searchTerm . '%');
+                      })
+                      ->orWhere('guest_email', 'like', '%' . $searchTerm . '%');
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            $orders = $query->paginate(15)->withQueryString();
+            $statuses = Order::select('status')->distinct()->pluck('status')->toArray(); // Get available statuses
+
+            return view('admin.orders.index', compact('orders', 'statuses'));
+        }
+
+        public function show(Order $order): View
+        {
+            $order->load(['user', 'items.product', /*'shippingAddressResolved', 'billingAddressResolved'*/]); // Eager load related data
+            return view('admin.orders.show', compact('order'));
+        }
+
+        public function update(Request $request, Order $order): RedirectResponse
+        {
+            // Typically for updating status or adding tracking
+            $request->validate([
+                'status' => ['required', 'string', Rule::in(array_keys(config('thescent.order_statuses', [])))], // Assuming statuses in config
+                'tracking_number' => ['nullable', 'string', 'max:100'],
+                'carrier' => ['nullable', 'string', 'max:100'],
+                'admin_notes' => ['nullable', 'string'], // Example internal notes
+            ]);
+
+            $details = [
+                'tracking_number' => $request->input('tracking_number'),
+                'carrier' => $request->input('carrier'),
+                'admin_notes' => $request->input('admin_notes'),
+            ];
+
+            try {
+                $this->orderService->updateOrderStatus($order, $request->input('status'), $details);
+                return redirect()->route('admin.orders.show', $order)->with('success', 'Order status updated successfully.');
+            } catch (\Exception $e) {
+                // Log::error("Error updating order {$order->id} status: " . $e->getMessage());
+                return back()->with('error', 'Failed to update order status. ' . $e->getMessage());
+            }
+        }
+        // Note: `destroy` for orders is typically not implemented or is a soft delete/cancellation process.
+    }
+    ```
+    *Config for order statuses (example, create `config/thescent.php` if not done, or add this key):*
+    ```php
+    // config/thescent.php
+    'order_statuses' => [
+        'pending_payment' => 'Pending Payment',
+        'paid' => 'Paid',
+        'processing' => 'Processing',
+        'shipped' => 'Shipped',
+        'delivered' => 'Delivered',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+        'refunded' => 'Refunded',
+        'disputed' => 'Disputed',
+        'payment_failed' => 'Payment Failed',
+    ],
+    ```
+
+3.  **View: `resources/views/admin/orders/index.blade.php`** (New)
+
+    ```php
+    <x-layouts.admin-layout>
+        <x-slot name="title">Manage Orders</x-slot>
+
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Orders</h1>
+            {{-- No "Add Order" button typically --}}
+        </div>
+
+        <!-- Search & Filter Form -->
+        <form method="GET" action="{{ route('admin.orders.index') }}" class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                    <input type="text" name="search" id="search" placeholder="Order #, Customer Name/Email" value="{{ request('search') }}"
+                           class="mt-1 block w-full rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-scent-primary dark:focus:border-scent-primary-dark focus:ring-scent-primary dark:focus:ring-scent-primary-dark">
+                </div>
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                    <select name="status" id="status" class="mt-1 block w-full rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-scent-primary dark:focus:border-scent-primary-dark focus:ring-scent-primary dark:focus:ring-scent-primary-dark">
+                        <option value="">All Statuses</option>
+                        @foreach(config('thescent.order_statuses', $statuses) as $statusCode => $statusName)
+                            <option value="{{ $statusCode }}" {{ request('status') == $statusCode ? 'selected' : '' }}>{{ $statusName }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="md:pt-6">
+                    <button type="submit" class="w-full md:w-auto btn btn-primary bg-scent-primary hover:bg-scent-primary/80 dark:bg-scent-primary-dark dark:hover:bg-scent-primary-dark/80 text-white py-2.5">Filter</button>
+                    @if(request('search') || request('status'))
+                        <a href="{{ route('admin.orders.index') }}" class="mt-2 md:mt-0 md:ms-2 w-full md:w-auto inline-flex justify-center items-center px-4 py-2.5 border border-gray-300 dark:border-gray-500 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">Clear</a>
+                    @endif
+                </div>
+            </div>
+        </form>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow overflow-x-auto">
+            @if($orders->count())
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Order #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach ($orders as $order)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-scent-primary dark:text-scent-primary-dark hover:underline">
+                                    <a href="{{ route('admin.orders.show', $order) }}">{{ $order->order_number }}</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                    {{ $order->user ? $order->user->name : ($order->guest_email ?: $order->shipping_name ?: 'Guest') }}
+                                    @if($order->user) <span class="text-xs text-gray-400"> (User ID: {{ $order->user_id }})</span> @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $order->created_at->format('M d, Y H:i') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $order->totalAmount->format() }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                     <span class="text-xs px-2 py-1 font-semibold leading-tight rounded-full
+                                        @switch($order->status)
+                                            @case('pending_payment') @case('payment_failed') class="bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100" @break
+                                            @case('paid') @case('processing') class="bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100" @break
+                                            @case('shipped') class="bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100" @break
+                                            @case('delivered') @case('completed') class="bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100" @break
+                                            @case('cancelled') @case('refunded') @case('disputed') class="bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100" @break
+                                            @default class="bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200"
+                                        @endswitch
+                                    ">{{ Str::title(str_replace('_', ' ', $order->status)) }}</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="{{ route('admin.orders.show', $order) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-200">View</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                <div class="mt-4">
+                    {{ $orders->links() }}
+                </div>
+            @else
+                <p class="text-gray-500 dark:text-gray-400">No orders found.</p>
+            @endif
+        </div>
+    </x-layouts.admin-layout>
+    ```
+
+4.  **View: `resources/views/admin/orders/show.blade.php`** (New)
+    ```php
+    <x-layouts.admin-layout>
+        <x-slot name="title">Order #{{ $order->order_number }} Details</x-slot>
+
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Order Details: #{{ $order->order_number }}</h1>
+            <a href="{{ route('admin.orders.index') }}" class="text-scent-primary dark:text-scent-primary-dark hover:underline">&larr; Back to Orders</a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Order Info & Actions --}}
+            <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Customer Information</h3>
+                        <p><strong>Name:</strong> {{ $order->user ? $order->user->name : ($order->shipping_name ?: 'N/A') }}</p>
+                        <p><strong>Email:</strong> {{ $order->user ? $order->user->email : ($order->guest_email ?: $order->shipping_email ?: 'N/A') }}</p>
+                        @if($order->user) <p><strong>User ID:</strong> {{ $order->user_id }}</p> @endif
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Order Dates</h3>
+                        <p><strong>Placed:</strong> {{ $order->created_at->format('M d, Y H:i A') }}</p>
+                        <p><strong>Last Updated:</strong> {{ $order->updated_at->format('M d, Y H:i A') }}</p>
+                        @if($order->paid_at)<p><strong>Paid:</strong> {{ $order->paid_at->format('M d, Y H:i A') }}</p>@endif
+                    </div>
+                </div>
+
+                <div class="mt-6 border-t dark:border-gray-700 pt-6">
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Shipping Address</h3>
+                    <address class="not-italic">
+                        {{ $order->shipping_name ?: ($order->user ? $order->user->name : '') }}<br>
+                        {{ $order->shipping_address }}<br>
+                        @if($order->shipping_address_line2) {{ $order->shipping_address_line2 }}<br> @endif
+                        {{ $order->shipping_city }}, {{ $order->shipping_state }} {{ $order->shipping_zip }}<br>
+                        {{ $order->shipping_country }}
+                        {{-- If using Address model: {{ $order->shippingAddressResolved ? $order->shippingAddressResolved->formatted_html : 'N/A' }} --}}
+                    </address>
+                </div>
+                 @if($order->order_notes)
+                <div class="mt-6 border-t dark:border-gray-700 pt-6">
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Customer Notes</h3>
+                    <p class="text-gray-600 dark:text-gray-300">{{ $order->order_notes }}</p>
+                </div>
+                @endif
+
+                <div class="mt-6 border-t dark:border-gray-700 pt-6">
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Order Items</h3>
+                    <ul class="divide-y dark:divide-gray-700">
+                        @foreach($order->items as $item)
+                        <li class="py-3 flex justify-between items-center">
+                            <div>
+                                <p class="font-medium">{{ $item->product_name_snapshot }} ({{ $item->product_sku_snapshot ?? 'SKU N/A' }})</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Qty: {{ $item->quantity }} x {{ $item->unitPrice->format() }}</p>
+                            </div>
+                            <p class="font-medium">{{ $item->total->format() }}</p>
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
+
+                <div class="mt-6 border-t dark:border-gray-700 pt-6 text-right space-y-1">
+                    <p><strong>Subtotal:</strong> {{ $order->subtotal->format() }}</p>
+                    @if($order->discount_minor_amount > 0)
+                        <p class="text-green-600 dark:text-green-400"><strong>Discount ({{ $order->coupon_code_applied ?: 'Applied' }}):</strong> -{{ $order->discountAmount->format() }}</p>
+                    @endif
+                    <p><strong>Shipping:</strong> {{ $order->shippingCost->format() }}</p>
+                    <p><strong>Tax:</strong> {{ $order->taxAmount->format() }}</p>
+                    <p class="text-xl font-bold"><strong>Total:</strong> {{ $order->totalAmount->format() }}</p>
+                </div>
+            </div>
+
+            {{-- Order Actions & Status --}}
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Order Status & Actions</h3>
+                    <p class="mb-2"><strong>Current Status:</strong>
+                        <span class="font-semibold px-2 py-1 rounded-full text-xs
+                            @switch($order->status)
+                                @case('pending_payment') @case('payment_failed') class="bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100" @break
+                                @case('paid') @case('processing') class="bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100" @break
+                                @case('shipped') class="bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100" @break
+                                @case('delivered') @case('completed') class="bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100" @break
+                                @case('cancelled') @case('refunded') @case('disputed') class="bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100" @break
+                                @default class="bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200"
+                            @endswitch
+                        ">{{ Str::title(str_replace('_', ' ', $order->status)) }}</span>
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1"><strong>Payment Gateway:</strong> {{ Str::title($order->payment_gateway) ?: 'N/A' }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4"><strong>Payment Intent ID:</strong> {{ $order->payment_intent_id ?: 'N/A' }}</p>
+
+                    <form action="{{ route('admin.orders.update', $order) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="mb-4">
+                            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Update Status</label>
+                            <select name="status" id="status" class="mt-1 block w-full rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-scent-primary dark:focus:border-scent-primary-dark focus:ring-scent-primary dark:focus:ring-scent-primary-dark">
+                                @foreach(config('thescent.order_statuses', []) as $statusCode => $statusName)
+                                    <option value="{{ $statusCode }}" {{ $order->status == $statusCode ? 'selected' : '' }}>{{ $statusName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="tracking_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tracking Number</label>
+                            <input type="text" name="tracking_number" id="tracking_number" value="{{ old('tracking_number', $order->tracking_number) }}" class="mt-1 block w-full rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-scent-primary dark:focus:border-scent-primary-dark focus:ring-scent-primary dark:focus:ring-scent-primary-dark">
+                        </div>
+                         <div class="mb-4">
+                            <label for="carrier" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Carrier</label>
+                            <input type="text" name="carrier" id="carrier" value="{{ old('carrier', $order->carrier) }}" class="mt-1 block w-full rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-scent-primary dark:focus:border-scent-primary-dark focus:ring-scent-primary dark:focus:ring-scent-primary-dark">
+                        </div>
+                        <button type="submit" class="w-full btn btn-primary bg-scent-primary hover:bg-scent-primary/80 dark:bg-scent-primary-dark dark:hover:bg-scent-primary-dark/80 text-white">Update Order</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </x-layouts.admin-layout>
+    ```
+
+---
+#### Step 6.4: User Management & Tax Rate Management (Admin)
+
+**User Management:**
+
+1.  **Policy: `app/Policies/UserPolicy.php`** (New or Expanded)
+    ```php
+    <?php declare(strict_types=1); namespace App\Policies;
+    use App\Domain\UserManagement\Models\User;
+    class UserPolicy {
+        public function viewAny(User $user): bool { return $user->role === 'admin'; }
+        public function view(User $user, User $model): bool { return $user->role === 'admin' || $user->id === $model->id; } // Admin can view any, user can view self
+        public function create(User $user): bool { return $user->role === 'admin'; } // Admin can create users
+        public function update(User $user, User $model): bool {
+            if ($user->role === 'admin') return true;
+            // return $user->id === $model->id; // User can update their own profile (this logic is usually in AccountController/ProfileController)
+            return false; // Non-admin cannot update other users via this policy directly
+        }
+        public function delete(User $user, User $model): bool {
+            if ($user->id === $model->id) return false; // Cannot delete self
+            return $user->role === 'admin';
+        }
+    }
+    ```
+    *(Register in `AuthServiceProvider`)*
+
+2.  **Form Request: `app/Http/Requests/Admin/UpdateUserRequest.php`** (New)
+    ```php
+    <?php declare(strict_types=1); namespace App\Http\Requests\Admin;
+    use Illuminate\Foundation\Http\FormRequest; use Illuminate\Validation\Rule; use App\Domain\UserManagement\Models\User;
+    class UpdateUserRequest extends FormRequest {
+        public function authorize(): bool {
+            $targetUser = $this->route('user'); // User being edited
+            return $this->user()->can('update', $targetUser instanceof User ? $targetUser : null);
+        }
+        public function rules(): array {
+            $userId = ($this->route('user') instanceof User) ? $this->route('user')->id : null;
+            return [
+                'name' => ['required', 'string', 'max:191'],
+                'email' => ['required', 'string', 'email', 'max:191', Rule::unique('users')->ignore($userId)],
+                'role' => ['required', 'string', Rule::in(['user', 'staff', 'admin'])],
+                'status' => ['required', 'string', Rule::in(['active', 'inactive', 'locked'])],
+                'password' => ['nullable', 'string', 'min:8', 'confirmed'], // Optional password change
+            ];
+        }
+    }
+    ```
+
+3.  **Controller: `app/Http/Controllers/Admin/UserController.php`** (New)
+    ```php
+    <?php declare(strict_types=1); namespace App\Http\Controllers\Admin;
+    use App\Http\Controllers\Controller; use App\Domain\UserManagement\Models\User;
+    use App\Http\Requests\Admin\UpdateUserRequest; use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Hash; use Illuminate\View\View; use Illuminate\Http\RedirectResponse;
+    class UserController extends Controller {
+        public function __construct() { $this->authorizeResource(User::class, 'user'); }
+        public function index(Request $request): View {
+            $query = User::query()->latest();
+            if ($request->filled('search')) {
+                $query->where('name', 'like', '%' . $request->search . '%')
+                      ->orWhere('email', 'like', '%' . $request->search . '%');
+            }
+            $users = $query->paginate(15)->withQueryString();
+            return view('admin.users.index', compact('users'));
+        }
+        public function edit(User $user): View {
+            $roles = ['user' => 'User', 'staff' => 'Staff', 'admin' => 'Admin'];
+            $statuses = ['active' => 'Active', 'inactive' => 'Inactive', 'locked' => 'Locked'];
+            return view('admin.users.edit', compact('user', 'roles', 'statuses'));
+        }
+        public function update(UpdateUserRequest $request, User $user): RedirectResponse {
+            $data = $request->validated();
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
+            $user->update($data);
+            return redirect()->route('admin.users.index')->with('success', 'User updated successfully.');
+        }
+        // Typically no store/create for admin, users register themselves.
+        // Destroy should be soft delete or carefully considered.
+    }
+    ```
+
+4.  **Views for Users:** `resources/views/admin/users/index.blade.php`, `resources/views/admin/users/edit.blade.php`. (These would be standard table/form views similar to Products/Categories).
+
+**Tax Rate Management:**
+
+5.  **Policy: `app/Policies/TaxRatePolicy.php`** (New)
+    ```php
+    <?php declare(strict_types=1); namespace App\Policies;
+    use App\Domain\UserManagement\Models\User; use App\Domain\Utility\Models\TaxRate;
+    class TaxRatePolicy {
+        public function viewAny(User $user): bool { return $user->role === 'admin'; }
+        public function view(User $user, TaxRate $taxRate): bool { return $user->role === 'admin'; }
+        public function create(User $user): bool { return $user->role === 'admin'; }
+        public function update(User $user, TaxRate $taxRate): bool { return $user->role === 'admin'; }
+        public function delete(User $user, TaxRate $taxRate): bool { return $user->role === 'admin'; }
+    }
+    ```
+    *(Register in `AuthServiceProvider`)*
+
+6.  **Form Requests for Tax Rates:**
+    *   **`app/Http/Requests/Admin/StoreTaxRateRequest.php`** (New)
+    ```php
+    <?php declare(strict_types=1); namespace App\Http\Requests\Admin;
+    use Illuminate\Foundation\Http\FormRequest; use Illuminate\Validation\Rule;
+    class StoreTaxRateRequest extends FormRequest {
+        public function authorize(): bool { return $this->user()->can('create', \App\Domain\Utility\Models\TaxRate::class); }
+        public function rules(): array {
+            return [
+                'name' => ['required', 'string', 'max:100'],
+                'country_code' => ['required', 'string', 'size:2'],
+                'state_code' => ['nullable', 'string', 'max:10'],
+                'postal_code_pattern' => ['nullable', 'string', 'max:50'],
+                'city' => ['nullable', 'string', 'max:100'],
+                'rate_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+                'is_compound' => ['sometimes', 'boolean'],
+                'priority' => ['required', 'integer', 'min:0'],
+                'is_active' => ['sometimes', 'boolean'],
+                'start_date' => ['nullable', 'date'],
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ];
+        }
+        protected function prepareForValidation() {
+            $this->merge([
+                'is_compound' => $this->boolean('is_compound'),
+                'is_active' => $this->boolean('is_active', true), // Default to active if not sent
+            ]);
+        }
+    }
+    ```
+    *   **`app/Http/Requests/Admin/UpdateTaxRateRequest.php`** (New - Extends StoreTaxRateRequest)
+    ```php
+    <?php declare(strict_types=1); namespace App\Http\Requests\Admin;
+    use App\Domain\Utility\Models\TaxRate;
+    class UpdateTaxRateRequest extends StoreTaxRateRequest {
+        public function authorize(): bool {
+            $taxRate = $this->route('tax_rate'); // Route model binding
+            return $this->user()->can('update', $taxRate instanceof TaxRate ? $taxRate : null);
+        }
+        // Rules can be inherited, or specific unique checks can be modified if needed
+    }
+    ```
+
+7.  **Controller: `app/Http/Controllers/Admin/TaxRateController.php`** (New)
+    ```php
+    <?php declare(strict_types=1); namespace App\Http\Controllers\Admin;
+    use App\Http\Controllers\Controller; use App\Domain\Utility\Models\TaxRate;
+    use App\Http\Requests\Admin\StoreTaxRateRequest; use App\Http\Requests\Admin\UpdateTaxRateRequest;
+    use Illuminate\Http\Request; use Illuminate\View\View; use Illuminate\Http\RedirectResponse;
+    class TaxRateController extends Controller {
+        public function __construct() { $this->authorizeResource(TaxRate::class, 'tax_rate'); }
+        public function index(Request $request): View {
+            $query = TaxRate::query()->latest();
+            if ($request->filled('search')) { $query->where('name', 'like', '%' . $request->search . '%')->orWhere('country_code', $request->search); }
+            $taxRates = $query->paginate(15)->withQueryString();
+            return view('admin.tax_rates.index', compact('taxRates'));
+        }
+        public function create(): View { return view('admin.tax_rates.create'); }
+        public function store(StoreTaxRateRequest $request): RedirectResponse {
+            TaxRate::create(array_merge($request->validated(), ['created_by_user_id' => auth()->id()]));
+            return redirect()->route('admin.tax-rates.index')->with('success', 'Tax rate created.');
+        }
+        public function edit(TaxRate $taxRate): View { return view('admin.tax_rates.edit', compact('taxRate')); }
+        public function update(UpdateTaxRateRequest $request, TaxRate $taxRate): RedirectResponse {
+            // Could log change in TaxRateHistory here or via an observer/event
+            $taxRate->update($request->validated());
+            return redirect()->route('admin.tax-rates.index')->with('success', 'Tax rate updated.');
+        }
+        public function destroy(TaxRate $taxRate): RedirectResponse {
+            // Consider if there are orders using this tax rate before deleting
+            $taxRate->delete();
+            return redirect()->route('admin.tax-rates.index')->with('success', 'Tax rate deleted.');
+        }
+    }
+    ```
+
+8.  **Views for Tax Rates:** `resources/views/admin/tax_rates/index.blade.php`, `resources/views/admin/tax_rates/create.blade.php`, `resources/views/admin/tax_rates/edit.blade.php`. (These would be standard table/form views).
+
+---
+This completes the file generation for Steps 6.1 to 6.4. The admin panel now has the foundational layout, dashboard, and CRUD interfaces for key e-commerce entities. Further refinements to the views, adding more detailed information, and implementing more complex actions within the controllers would be the next iteration for the admin panel. Remember to register all new Policies in your `AuthServiceProvider`.
+
