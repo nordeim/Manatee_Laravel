@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Inventory\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Domain\Catalog\Models\Product;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class InventoryMovement extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'product_id',
+        'quantity_change',
+        'type',
+        'reference_id',
+        'notes',
+    ];
+
+    /**
+     * Indicates if the model should be timestamped.
+     * Only 'created_at' is used for this log-like table.
+     *
+     * @var bool
+     */
+    public $timestamps = false; // Set to true if you want both created_at and updated_at auto-managed by Eloquent
+
+    // If $timestamps = false, and you want created_at to be managed by Eloquent on creation:
+    // const CREATED_AT = 'created_at';
+    // const UPDATED_AT = null; // No updated_at column
+
+    // However, the migration defines created_at with default CURRENT_TIMESTAMP,
+    // so Eloquent's auto-timestamping might not be strictly necessary if $timestamps = false.
+    // If $timestamps = true (default), Eloquent will manage both. Let's keep it simple with true.
+    // public $timestamps = true; // (Corrected - easier)
+
+    protected $casts = [
+        'quantity_change' => 'integer',
+    ];
+
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+}

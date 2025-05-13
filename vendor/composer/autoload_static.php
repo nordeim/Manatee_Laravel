@@ -258,8 +258,8 @@ class ComposerStaticInitc0d01e4a05d210a0c6ad517aeaa84830
         'phpDocumentor\\Reflection\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
-            1 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
-            2 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
+            1 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
+            2 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
         ),
         'phpDocumentor\\' => 
         array (
@@ -439,8 +439,8 @@ class ComposerStaticInitc0d01e4a05d210a0c6ad517aeaa84830
         ),
         'Psr\\Http\\Message\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-message/src',
-            1 => __DIR__ . '/..' . '/psr/http-factory/src',
+            0 => __DIR__ . '/..' . '/psr/http-factory/src',
+            1 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
         'Psr\\Http\\Client\\' => 
         array (
@@ -516,8 +516,8 @@ class ComposerStaticInitc0d01e4a05d210a0c6ad517aeaa84830
         ),
         'League\\Uri\\' => 
         array (
-            0 => __DIR__ . '/..' . '/league/uri-interfaces',
-            1 => __DIR__ . '/..' . '/league/uri',
+            0 => __DIR__ . '/..' . '/league/uri',
+            1 => __DIR__ . '/..' . '/league/uri-interfaces',
         ),
         'League\\OAuth1\\Client\\' => 
         array (
@@ -965,9 +965,30 @@ class ComposerStaticInitc0d01e4a05d210a0c6ad517aeaa84830
         'Amp\\TimeoutCancellation' => __DIR__ . '/..' . '/amphp/amp/src/TimeoutCancellation.php',
         'Amp\\TimeoutException' => __DIR__ . '/..' . '/amphp/amp/src/TimeoutException.php',
         'App\\Casts\\MonetaryAmountCast' => __DIR__ . '/../..' . '/app/Casts/MonetaryAmountCast.php',
+        'App\\Domain\\Catalog\\Contracts\\ProductRepositoryContract' => __DIR__ . '/../..' . '/app/Domain/Catalog/Contracts/ProductRepositoryContract.php',
+        'App\\Domain\\Catalog\\DTOs\\ProductAttributeData' => __DIR__ . '/../..' . '/app/Domain/Catalog/DTOs/ProductAttributeData.php',
+        'App\\Domain\\Catalog\\DTOs\\ProductData' => __DIR__ . '/../..' . '/app/Domain/Catalog/DTOs/ProductData.php',
+        'App\\Domain\\Catalog\\Events\\ProductViewedEvent' => __DIR__ . '/../..' . '/app/Domain/Catalog/Events/ProductViewedEvent.php',
+        'App\\Domain\\Catalog\\Models\\Category' => __DIR__ . '/../..' . '/app/Domain/Catalog/Models/Category.php',
+        'App\\Domain\\Catalog\\Models\\Product' => __DIR__ . '/../..' . '/app/Domain/Catalog/Models/Product.php',
+        'App\\Domain\\Catalog\\Models\\ProductAttribute' => __DIR__ . '/../..' . '/app/Domain/Catalog/Models/ProductAttribute.php',
+        'App\\Domain\\Catalog\\Services\\ProductQueryService' => __DIR__ . '/../..' . '/app/Domain/Catalog/Services/ProductQueryService.php',
+        'App\\Domain\\Inventory\\Events\\LowStockThresholdReachedEvent' => __DIR__ . '/../..' . '/app/Domain/Inventory/Events/LowStockThresholdReachedEvent.php',
+        'App\\Domain\\Inventory\\Events\\StockLevelChangedEvent' => __DIR__ . '/../..' . '/app/Domain/Inventory/Events/StockLevelChangedEvent.php',
+        'App\\Domain\\Inventory\\Exceptions\\InsufficientStockException' => __DIR__ . '/../..' . '/app/Domain/Inventory/Exceptions/InsufficientStockException.php',
+        'App\\Domain\\Inventory\\Models\\InventoryMovement' => __DIR__ . '/../..' . '/app/Domain/Inventory/Models/InventoryMovement.php',
+        'App\\Domain\\Inventory\\Services\\InventoryService' => __DIR__ . '/../..' . '/app/Domain/Inventory/Services/InventoryService.php',
+        'App\\Domain\\Shared\\ValueObjects\\EmailAddress' => __DIR__ . '/../..' . '/app/Domain/Shared/ValueObjects/EmailAddress.php',
+        'App\\Domain\\Shared\\ValueObjects\\FullName' => __DIR__ . '/../..' . '/app/Domain/Shared/ValueObjects/FullName.php',
         'App\\Domain\\Shared\\ValueObjects\\MonetaryAmount' => __DIR__ . '/../..' . '/app/Domain/Shared/ValueObjects/MonetaryAmount.php',
+        'App\\Domain\\UserManagement\\DTOs\\UserData' => __DIR__ . '/../..' . '/app/Domain/UserManagement/DTOs/UserData.php',
+        'App\\Domain\\UserManagement\\Events\\PasswordResetRequestedEvent' => __DIR__ . '/../..' . '/app/Domain/UserManagement/Events/PasswordResetRequestedEvent.php',
+        'App\\Domain\\UserManagement\\Events\\UserRegisteredEvent' => __DIR__ . '/../..' . '/app/Domain/UserManagement/Events/UserRegisteredEvent.php',
+        'App\\Domain\\UserManagement\\Models\\Address' => __DIR__ . '/../..' . '/app/Domain/UserManagement/Models/Address.php',
+        'App\\Domain\\UserManagement\\Models\\User' => __DIR__ . '/../..' . '/app/Domain/UserManagement/Models/User.php',
+        'App\\Domain\\UserManagement\\Services\\UserProfileService' => __DIR__ . '/../..' . '/app/Domain/UserManagement/Services/UserProfileService.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
-        'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
+        'App\\Infrastructure\\Persistence\\Eloquent\\Repositories\\EloquentProductRepository' => __DIR__ . '/../..' . '/app/Infrastructure/Persistence/Eloquent/Repositories/EloquentProductRepository.php',
         'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',
         'App\\Providers\\AuthServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AuthServiceProvider.php',
         'App\\Providers\\DomainServiceProvider' => __DIR__ . '/../..' . '/app/Providers/DomainServiceProvider.php',
@@ -1116,6 +1137,11 @@ class ComposerStaticInitc0d01e4a05d210a0c6ad517aeaa84830
         'Cron\\HoursField' => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron/HoursField.php',
         'Cron\\MinutesField' => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron/MinutesField.php',
         'Cron\\MonthField' => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron/MonthField.php',
+        'Database\\Factories\\AddressFactory' => __DIR__ . '/../..' . '/database/factories/AddressFactory.php',
+        'Database\\Factories\\CategoryFactory' => __DIR__ . '/../..' . '/database/factories/CategoryFactory.php',
+        'Database\\Factories\\InventoryMovementFactory' => __DIR__ . '/../..' . '/database/factories/InventoryMovementFactory.php',
+        'Database\\Factories\\ProductAttributeFactory' => __DIR__ . '/../..' . '/database/factories/ProductAttributeFactory.php',
+        'Database\\Factories\\ProductFactory' => __DIR__ . '/../..' . '/database/factories/ProductFactory.php',
         'Database\\Factories\\UserFactory' => __DIR__ . '/../..' . '/database/factories/UserFactory.php',
         'Database\\Seeders\\DatabaseSeeder' => __DIR__ . '/../..' . '/database/seeders/DatabaseSeeder.php',
         'DateError' => __DIR__ . '/..' . '/symfony/polyfill-php83/Resources/stubs/DateError.php',
