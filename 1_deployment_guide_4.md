@@ -50,3 +50,15 @@ composer dump-autoload
     resources/views/frontend/partials/
     resources/views/frontend/static/
 
+	app/Providers/ViewServiceProvider.php
+
+	app/Http/Controllers/Frontend/ProductController.php
+	app/Http/Controllers/Frontend/QuizController.php
+	app/View/Composers/
+	resources/js/ambient-audio.js
+	resources/js/parallax-init.js
+	resources/js/scent-quiz.js
+	resources/views/frontend/partials/home/featured-products.blade.php
+	resources/views/frontend/partials/home/hero.blade.php
+	resources/views/frontend/products/
+	resources/views/frontend/quiz/
