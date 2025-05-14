@@ -1,0 +1,12 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Promotion\Exceptions;
+
+use RuntimeException;
+
+class InvalidCouponException extends RuntimeException
+{
+    //
+}

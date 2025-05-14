@@ -4,40 +4,39 @@ composer dump-autoload
 
 ./vendor/bin/sail artisan migrate
 
-On branch main
-Your branch is up to date with 'origin/main'.
-
-Changes not staged for commit:
-  (use "git add/rm <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	deleted:    app/Models/User.php
-	modified:   app/Providers/DomainServiceProvider.php
-	modified:   config/auth.php
-	modified:   database/factories/UserFactory.php
-	deleted:    oo1
-	modified:   vendor/composer/autoload_classmap.php
-	modified:   vendor/composer/autoload_psr4.php
-	modified:   vendor/composer/autoload_static.php
-
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-	1_deployment_guide_4.md
-	app/Domain/Catalog/
-	app/Domain/Inventory/
+	config/auth.php
 	app/Domain/Shared/ValueObjects/EmailAddress.php
 	app/Domain/Shared/ValueObjects/FullName.php
-	app/Domain/UserManagement/
-	app/Infrastructure/
+	app/Providers/DomainServiceProvider.php
+	database/factories/UserFactory.php
 	database/factories/AddressFactory.php
 	database/factories/CategoryFactory.php
 	database/factories/InventoryMovementFactory.php
 	database/factories/ProductAttributeFactory.php
 	database/factories/ProductFactory.php
-	database/factories/UserFactory.php.bak
+	database/factories/AuditLogFactory.php
+	database/factories/CartItemFactory.php
+	database/factories/CouponFactory.php
+	database/factories/EmailLogFactory.php
+	database/factories/NewsletterSubscriberFactory.php
+	database/factories/OrderFactory.php
+	database/factories/OrderItemFactory.php
+	database/factories/QuizResultFactory.php
+	database/factories/TaxRateFactory.php
+	database/factories/TaxRateHistoryFactory.php
 	database/migrations/0001_01_02_000001_create_addresses_table.php
 	database/migrations/0001_01_02_000002_create_categories_table.php
 	database/migrations/0001_01_02_000003_create_products_table.php
 	database/migrations/0001_01_02_000004_create_product_attributes_table.php
 	database/migrations/0001_01_02_000005_create_inventory_movements_table.php
+	database/migrations/0001_01_03_000001_create_coupons_table.php
+	database/migrations/0001_01_03_000002_create_orders_table.php
+	database/migrations/0001_01_03_000003_create_order_items_table.php
+	database/migrations/0001_01_03_000004_create_cart_items_table.php
+	database/migrations/0001_01_04_000001_create_quiz_results_table.php
+	database/migrations/0001_01_04_000002_create_newsletter_subscribers_table.php
+	database/migrations/0001_01_04_000003_create_audit_log_table.php
+	database/migrations/0001_01_04_000004_create_email_log_table.php
+	database/migrations/0001_01_04_000005_create_tax_rates_table.php
+	database/migrations/0001_01_04_000006_create_tax_rate_history_table.php
 
-no changes added to commit (use "git add" and/or "git commit -a")
