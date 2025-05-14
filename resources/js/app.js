@@ -1,32 +1,34 @@
+// resources/js/app.js
 import './bootstrap';
 
 import Alpine from 'alpinejs';
+import collapse from '@alpinejs/collapse';
 window.Alpine = Alpine;
-// Import other Alpine plugins if needed, e.g., focus, collapse
-// import focus from '@alpinejs/focus'
-// Alpine.plugin(focus)
+Alpine.plugin(collapse);
 
-// Import custom JS modules
-import darkMode from './dark-mode';
-// import ambientAudio from './ambient-audio'; // Example
-// import parallaxInit from './parallax-init'; // Example
-// import scentQuiz from './scent-quiz'; // Example
+// Import custom JS modules/Alpine components
+import darkModeHandler from './dark-mode';
+import ambientAudioHandler from './ambient-audio';
+import scentQuizHandler from './scent-quiz';
+import initAboutParallax from './parallax-init';
+import initTestimonialObserver from './testimonial-observer'; // New
 
 document.addEventListener('alpine:init', () => {
-    Alpine.data('darkModeHandler', darkMode);
-    // Alpine.data('ambientAudioHandler', ambientAudio);
-    // Alpine.data('scentQuizHandler', scentQuiz);
-
-    // Initialize other global Alpine components or data here if needed
-    Alpine.store('cart', {
-        count: 0,
-        // other cart related reactive data
-    });
+    Alpine.data('darkModeHandler', darkModeHandler);
+    Alpine.data('ambientAudioHandler', ambientAudioHandler);
+    Alpine.data('scentQuizHandler', scentQuizHandler);
+    // Newsletter form Alpine component is defined inline in the newsletter_form.blade.php partial
 });
 
 Alpine.start();
 
-// Initialize other non-Alpine JS modules
-// parallaxInit(); // If it's a non-Alpine specific init
-
-console.log('The Scent JS Initialized with Alpine.');
+// Initialize non-Alpine specific JS modules on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('aboutParallaxImgContainer')) {
+        initAboutParallax();
+    }
+    if (document.querySelector('.testimonial-card')) { // Check if testimonials exist
+        initTestimonialObserver();
+    }
+    console.log('The Scent JS Initialized with Alpine and custom modules.');
+});

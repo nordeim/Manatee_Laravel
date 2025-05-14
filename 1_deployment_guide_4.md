@@ -40,3 +40,13 @@ composer dump-autoload
 	database/migrations/0001_01_04_000005_create_tax_rates_table.php
 	database/migrations/0001_01_04_000006_create_tax_rate_history_table.php
 
+    resources/js/app.js
+    resources/views/frontend/home.blade.php
+    routes/web.php
+    app/Http/Controllers/Frontend/
+    app/View/
+    resources/js/testimonial-observer.js
+    resources/views/components/frontend/
+    resources/views/frontend/partials/
+    resources/views/frontend/static/
+
